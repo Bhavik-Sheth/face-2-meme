@@ -24,9 +24,9 @@ def test_stage1_emotion_detection():
     
     # Test with sample meme images (they exist in assets/memes/)
     test_images = [
-        "assets/memes/happy/politician_a.jpg",
-        "assets/memes/sad/politician_c.jpg",
-        "assets/memes/angry/politician_e.jpg",
+        "assets/memes/happy/politician_a.png",
+        "assets/memes/sad/politician_c.png",
+        "assets/memes/angry/politician_e.png",
     ]
     
     print("\nTesting emotion detection on sample images:")
@@ -52,7 +52,7 @@ def test_complete_pipeline():
     print("=" * 70)
     
     # Use a sample image
-    test_image = backend_path / "assets/memes/happy/politician_a.jpg"
+    test_image = backend_path / "assets/memes/happy/politician_a.png"
     
     if not test_image.exists():
         print("⚠️  No test images available. Run create_sample_memes.py first.")
@@ -113,8 +113,8 @@ def test_multiple_emotions():
         
         # Find a sample image for this emotion
         emotion_folder = backend_path / "assets" / "memes" / emotion
-        images = list(emotion_folder.glob("*.jpg"))
-        
+        # Check if emotion folder has any meme images
+        images = list(emotion_folder.glob("*.png"))
         if not images:
             print(f"  ⚠️  No images found for {emotion}")
             continue
@@ -143,7 +143,7 @@ def test_convenience_function():
     print("TESTING CONVENIENCE FUNCTION")
     print("=" * 70)
     
-    test_image = backend_path / "assets/memes/happy/politician_a.jpg"
+    test_image = backend_path / "assets/memes/happy/politician_a.png"
     
     if test_image.exists():
         print(f"\nUsing detect_emotion_from_image():")
@@ -170,7 +170,7 @@ if __name__ == "__main__":
     print("ALL TESTS COMPLETE!")
     print("=" * 70)
     print("\nNext Steps:")
-    print("1. Add your trained emotion_teller.pkl model to backend/models/")
+    print("1. Add your trained emotion_teller.pth model to backend/models/")
     print("2. Update preprocessing in emotion_detector.py if needed")
     print("3. Test with real user images")
     print("4. Integrate with FastAPI endpoints")

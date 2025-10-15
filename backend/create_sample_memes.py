@@ -60,8 +60,8 @@ def generate_sample_memes():
         emotion_folder.mkdir(parents=True, exist_ok=True)
         
         img = create_sample_meme(emotion, politician, color)
-        output_path = emotion_folder / f"{politician.lower()}.jpg"
-        img.save(output_path, "JPEG", quality=95)
+        output_path = emotion_folder / f"{politician.lower()}.png"
+        img.save(output_path, "PNG")
         print(f"  ✓ Created: {output_path}")
     
     print(f"\n✅ Generated {len(samples)} sample memes!")

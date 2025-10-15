@@ -9,7 +9,7 @@ from services.emotion_detector import EmotionDetector
 def stage1_emotion_detection(image_path: str) -> str:
     """
     Stage 1: Detect emotion from user's face image using EmotionDetector.
-    Uses emotion_teller.pkl model (or placeholder if not available).
+    Uses emotion_teller.pth model (or placeholder if not available).
     """
     detector = EmotionDetector()
     result = detector.detect_emotion(image_path)
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     backend_path = Path(__file__).parent
     
     # Use a sample image for testing
-    user_image = str(backend_path / "assets/memes/happy/politician_a.jpg")
+    user_image = str(backend_path / "assets/memes/happy/politician_a.png")
     
     if Path(user_image).exists():
         result = complete_pipeline(user_image)
@@ -117,9 +117,9 @@ if __name__ == "__main__":
     
     # Test with various sample images
     test_images = [
-        "assets/memes/happy/politician_b.jpg",
-        "assets/memes/sad/politician_c.jpg",
-        "assets/memes/angry/politician_e.jpg",
+        "assets/memes/happy/politician_b.png",
+        "assets/memes/sad/politician_c.png",
+        "assets/memes/angry/politician_e.png",
     ]
     
     for img_path in test_images:

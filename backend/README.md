@@ -14,13 +14,14 @@ User Image → Emotion Detection → Meme Selection → Output Meme
 
 ### **Stage 1: Emotion Detection**
 - Takes a user's face image as input
-- Uses `emotion_teller.pkl` ML model to detect emotion
+- Uses **MobileNetV2** deep learning model (`emotion_teller.pth`)
+- Trained on FER2013 dataset
 - Returns one of 7 emotions: `happy`, `sad`, `angry`, `neutral`, `surprise`, `fear`, `disgust`
 
 ### **Stage 2: Meme Selection**
 - Takes the detected emotion string
 - Randomly selects a matching politician meme from `assets/memes/{emotion}/`
-- Copies selected meme to `outputs/final_meme.jpg` for display
+- Copies selected meme to `outputs/final_meme.png` for display
 
 ---
 
@@ -33,7 +34,7 @@ User Image → Emotion Detection → Meme Selection → Output Meme
    ↓
 3. Emotion → politician_selector.py → Random meme selection
    ↓
-4. Meme copied to outputs/final_meme.jpg
+4. Meme copied to outputs/final_meme.png
    ↓
 5. Frontend displays the meme
 ```
@@ -57,7 +58,7 @@ backend/
 │   └── meme_routes.py          # Legacy routes
 │
 ├── models/                      # ML models
-│   └── emotion_teller.pkl      # Your emotion detection model
+│   └── emotion_teller.pth      # Your emotion detection model
 │
 ├── assets/memes/               # Meme repository (organized by emotion)
 │   ├── happy/
@@ -69,7 +70,7 @@ backend/
 │   └── disgust/
 │
 ├── outputs/                    # Generated output
-│   └── final_meme.jpg         # Final meme ready for display
+│   └── final_meme.png         # Final meme ready for display
 │
 └── data/
     └── meme_map.csv           # Emotion-to-folder mapping
@@ -79,7 +80,9 @@ backend/
 
 ## Key Features
 
-✅ **Emotion Detection** - ML model detects 7 emotions from face images  
+✅ **MobileNetV2 Emotion Detection** - Deep learning model trained on FER2013 dataset  
+✅ **GPU/CPU Support** - Automatic device detection (CUDA/CPU)  
+✅ **High Accuracy** - Custom classifier with dropout and batch normalization  
 ✅ **Meme Selection** - Randomly picks matching politician memes  
 ✅ **Output Management** - Copies memes to standard output location  
 ✅ **Placeholder Mode** - Works without model for testing  
@@ -91,8 +94,10 @@ backend/
 ## Tech Stack
 
 - **Framework:** FastAPI (async Python web framework)
-- **ML Models:** Custom emotion classifier (scikit-learn/TensorFlow/PyTorch)
+- **Deep Learning:** PyTorch, TorchVision (MobileNetV2 architecture)
+- **ML Libraries:** scikit-learn, TensorFlow
 - **Image Processing:** Pillow, OpenCV, NumPy
+- **Model:** MobileNetV2 with custom 7-class emotion classifier
 - **Dependencies:** See `requirements.txt`
 
 ---
@@ -105,12 +110,21 @@ pip install -r requirements.txt
 ```
 
 ### 2. Add Your Model
-Place your trained `emotion_teller.pkl` in `models/` directory
+## Quick Start
+
+### 1. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Add Your Model
+Place your trained MobileNetV2 model file at `models/emotion_teller.pth`  
+*(Must be state_dict format with 7-class classifier)*
 
 ### 3. Add Meme Images
 Add politician meme images to emotion subfolders:
-- `assets/memes/happy/politician1.jpg`
-- `assets/memes/sad/politician2.jpg`
+- `assets/memes/happy/politician1.png`
+- `assets/memes/sad/politician2.png`
 - etc.
 
 ### 4. Test the Pipeline
@@ -135,7 +149,7 @@ python test_complete_pipeline.py
 **Test Stage 1 (Emotion Detection):**
 ```python
 from services.emotion_detector import detect_emotion_from_image
-emotion = detect_emotion_from_image("test_image.jpg")
+emotion = detect_emotion_from_image("test_image.png")
 print(emotion)  # Output: "happy"
 ```
 
@@ -143,7 +157,7 @@ print(emotion)  # Output: "happy"
 ```python
 from services.politician_selector import select_and_output_meme
 result = select_and_output_meme("happy")
-print(result['output_path'])  # Output: "outputs/final_meme.jpg"
+print(result['output_path'])  # Output: "outputs/final_meme.png"
 ```
 
 ---

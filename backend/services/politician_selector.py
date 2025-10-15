@@ -1,6 +1,7 @@
 """
 Stage 2: Politician/Meme Selector
-Takes emotion from stage 1 and returns a matching politician meme path.
+Takes emotion from stage 1 and r        # Get all image files in the emotion subfolder
+        image_extensions = [".png"]urns a matching politician meme path.
 Supports outputting/displaying the selected meme image.
 """
 import os
@@ -71,7 +72,7 @@ class PoliticianSelector:
             }
         
         # Get all image files in the emotion folder
-        image_extensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
+        image_extensions = [".png"]
         meme_files = [
             f for f in os.listdir(emotion_folder)
             if os.path.isfile(emotion_folder / f) 
@@ -107,7 +108,7 @@ class PoliticianSelector:
             emotion_folder = self.memes_base_path / emotion
             if emotion_folder.exists():
                 # Check if folder has any image files
-                image_extensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
+                image_extensions = [".png"]
                 meme_files = [
                     f for f in os.listdir(emotion_folder)
                     if os.path.isfile(emotion_folder / f) 
@@ -124,7 +125,7 @@ class PoliticianSelector:
         Args:
             meme_result (dict): Result from select_meme()
             output_path (str): Optional custom output path. 
-                             If None, uses backend/outputs/final_meme.jpg
+                             If None, uses backend/outputs/final_meme.png
         
         Returns:
             dict: {

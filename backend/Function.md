@@ -2,7 +2,15 @@
 
 ## How the Backend Works
 
-This document explains the technical implementation of the emotion-to-meme pipeline.
+This document explains the technical implementation of the emotion-to-meme pi#### Model Requirements:
+- **Input:** PyTorch Tensor (1, 3, 224, 224) - Batch of 1, RGB, 224x224
+- **Output:** Tensor (1, 7) - Logits for 7 emotion classes
+- **Format:** PyTorch state dictionary (.pth) file
+- **Device:** Auto-detects CUDA/CPU
+- **Precision:** Uses torch.amp.autocast for mixed precision
+
+### **Placeholder Mode**
+If `emotion_teller.pth` not found:
 
 ---
 
@@ -11,11 +19,21 @@ This document explains the technical implementation of the emotion-to-meme pipel
 ### **Location:** `services/emotion_detector.py`
 
 ### **Purpose**
-Detects emotion from a user's face image using the `emotion_teller.pkl` ML model.
+Detects emotion from a user's face image using the **MobileNetV2** model trained on FER2013 dataset.
+
+### **Model Architecture**
+- **Base Model**: MobileNetV2 (pretrained on ImageNet)
+- **Custom Classifier**:
+  - Dropout(0.5) → Linear(1280→512) → ReLU → BatchNorm1d
+  - Dropout(0.4) → Linear(512→256) → ReLU → BatchNorm1d  
+  - Dropout(0.3) → Linear(256→7) [7 emotion classes]
+- **Training Dataset**: FER2013 (Facial Expression Recognition)
+- **Classes**: angry, disgust, fear, happy, neutral, sad, surprise
 
 ### **Input**
-- Image file path (string): `"path/to/user/image.jpg"`
-- Supported formats: JPG, PNG, GIF, WEBP
+- Image file path (string): `"path/to/user/image.png"`
+- Supported formats: PNG (any RGB/Grayscale image)
+- Image is automatically converted to grayscale with 3 channels
 
 ### **Processing Steps**
 
@@ -24,25 +42,34 @@ Detects emotion from a user's face image using the `emotion_teller.pkl` ML model
 from services.emotion_detector import EmotionDetector
 
 detector = EmotionDetector()
-# Automatically loads models/emotion_teller.pkl
+# Automatically loads models/emotion_teller.pth
 ```
 
 #### 2. Preprocess Image
-- Opens image file
-- Converts to RGB (if needed)
+- Opens image file and converts to RGB
+- Converts to grayscale (3 channels for MobileNetV2 compatibility)
 - Resizes to 224×224 pixels
-- Normalizes pixel values (0-255 → 0-1)
-- Converts to NumPy array
+- Converts to PyTorch tensor
+- Normalizes using ImageNet statistics:
+  - Mean: [0.485, 0.456, 0.406]
+  - Std: [0.229, 0.224, 0.225]
 
 #### 3. Model Prediction
 ```python
-result = detector.detect_emotion("image.jpg")
-# Model predicts: "happy", "sad", "angry", "neutral", "surprise", "fear", "disgust"
+result = detector.detect_emotion("image.png")
+# MobileNetV2 predicts: "happy", "sad", "angry", "neutral", "surprise", "fear", "disgust"
 ```
+
+**Inference Process:**
+- Forward pass through MobileNetV2
+- Apply Softmax to get probabilities
+- Select class with highest probability
+- Return emotion label and confidence score
 
 #### 4. Validation
 - Ensures predicted emotion is in supported list
 - Falls back to "neutral" if invalid
+- Handles errors gracefully with placeholder mode
 
 ### **Output**
 ```python
@@ -51,7 +78,7 @@ result = detector.detect_emotion("image.jpg")
     "confidence": 0.85,           # Model confidence (0-1)
     "success": True,              # Detection succeeded
     "message": "Emotion detected: happy",
-    "model_used": "emotion_teller.pkl"  # or "placeholder"
+    "model_used": "emotion_teller.pth"  # or "placeholder"
 }
 ```
 
@@ -62,7 +89,7 @@ result = detector.detect_emotion("image.jpg")
 from services.emotion_detector import EmotionDetector
 
 detector = EmotionDetector()
-result = detector.detect_emotion("user_image.jpg")
+result = detector.detect_emotion("user_image.png")
 
 if result['success']:
     emotion = result['emotion']
@@ -74,38 +101,51 @@ if result['success']:
 ```python
 from services.emotion_detector import detect_emotion_from_image
 
-emotion = detect_emotion_from_image("user_image.jpg")
+emotion = detect_emotion_from_image("user_image.png")
 print(emotion)  # "happy"
 ```
 
 ### **Model Integration**
 
-#### Adding Your Model
-1. Save your trained model:
-   ```python
-   import pickle
-   with open('emotion_teller.pkl', 'wb') as f:
-       pickle.dump(your_model, f)
-   ```
+#### Model File Format
+The model file `emotion_teller.pth` should contain the **state dictionary** of the trained MobileNetV2 model.
 
-2. Place in `models/emotion_teller.pkl`
+**Training Script (save model):**
+```python
+import torch
+import torch.nn as nn
+from torchvision import models
 
-3. Update preprocessing if needed (in `emotion_detector.py`):
-   ```python
-   # Change resize dimensions
-   img = img.resize((48, 48))  # Default: (224, 224)
-   
-   # Change normalization
-   img_array = img_array / 255.0  # Default: 0-1 range
-   ```
+# After training your model
+torch.save(model.state_dict(), 'emotion_teller.pth')
+```
+
+**Model Architecture (must match exactly):**
+```python
+model = models.mobilenet_v2(weights=None)
+model.classifier = nn.Sequential(
+    nn.Dropout(0.5),
+    nn.Linear(model.last_channel, 512),
+    nn.ReLU(),
+    nn.BatchNorm1d(512),
+    nn.Dropout(0.4),
+    nn.Linear(512, 256),
+    nn.ReLU(),
+    nn.BatchNorm1d(256),
+    nn.Dropout(0.3),
+    nn.Linear(256, 7)  # 7 emotion classes
+)
+```
+
+**Place model file at:** `backend/models/emotion_teller.pth`
 
 #### Model Requirements
 - **Input:** NumPy array (H, W, C)
 - **Output:** Emotion string from supported list
-- **Format:** Pickle (.pkl) file
+- **Format:** PyTorch (.pth) file
 
 ### **Placeholder Mode**
-If `emotion_teller.pkl` not found:
+If `emotion_teller.pth` not found:
 - Uses deterministic placeholder for testing
 - Returns consistent emotions based on filename hash
 - Allows pipeline testing without trained model
@@ -143,31 +183,30 @@ emotion_folder = assets/memes/{emotion}/
 ```
 
 #### 4. Find Available Memes
-- Scans folder for image files (.jpg, .jpeg, .png, .gif, .webp)
+- Scans folder for PNG image files
 - Returns error if folder empty
 
 #### 5. Random Selection
 ```python
 import random
 selected_meme = random.choice(available_memes)
-# Example: politician_a.jpg
+# Example: politician_a.png
 ```
 
 #### 6. Output Meme
-- Copies selected meme to `outputs/final_meme.jpg`
-- Preserves original file extension
+- Copies selected meme to `outputs/final_meme.png`
 
 ### **Output**
 ```python
 {
     "emotion": "happy",
-    "meme_path": "assets/memes/happy/politician_a.jpg",  # Original
-    "meme_filename": "politician_a.jpg",
+    "meme_path": "assets/memes/happy/politician_a.png",  # Original
+    "meme_filename": "politician_a.png",
     "success": True,
     "message": "Meme selected successfully",
-    "output_path": "outputs/final_meme.jpg",  # Copy for display
+    "output_path": "outputs/final_meme.png",  # Copy for display
     "output_success": True,
-    "output_message": "Meme output to outputs/final_meme.jpg"
+    "output_message": "Meme output to outputs/final_meme.png"
 }
 ```
 
@@ -178,7 +217,7 @@ selected_meme = random.choice(available_memes)
 from services.politician_selector import select_and_output_meme
 
 result = select_and_output_meme("happy")
-print(result['output_path'])  # "outputs/final_meme.jpg"
+print(result['output_path'])  # "outputs/final_meme.png"
 ```
 
 #### Method 2: Manual Control
@@ -208,11 +247,11 @@ result = select_and_display_meme("surprise")
 ```
 assets/memes/
 ├── happy/
-│   ├── politician_a.jpg
-│   ├── politician_b.jpg
+│   ├── politician_a.png
+│   ├── politician_b.png
 │   └── ...
 ├── sad/
-│   ├── politician_c.jpg
+│   ├── politician_c.png
 │   └── ...
 ├── angry/
 ├── neutral/
@@ -237,7 +276,7 @@ from services.politician_selector import select_and_output_meme
 detector = EmotionDetector()
 
 # Stage 1: Detect emotion
-user_image = "captured_frame.jpg"
+user_image = "captured_frame.png"
 emotion_result = detector.detect_emotion(user_image)
 
 if emotion_result['success']:
@@ -252,7 +291,7 @@ if emotion_result['success']:
     if meme_result['success']:
         print(f"Stage 2: Meme ready at {meme_result['output_path']}")
         
-        # Frontend can now display outputs/final_meme.jpg
+        # Frontend can now display outputs/final_meme.png
 ```
 
 ### **Pipeline Flow Diagram**
@@ -269,7 +308,7 @@ if emotion_result['success']:
 │    File: services/emotion_detector.py                       │
 │                                                              │
 │    ┌──────────────────────────────────────────────┐        │
-│    │ Load emotion_teller.pkl model                │        │
+│    │ Load emotion_teller.pth model                │        │
 │    └──────────────┬───────────────────────────────┘        │
 │                   ↓                                          │
 │    ┌──────────────────────────────────────────────┐        │
@@ -300,15 +339,15 @@ if emotion_result['success']:
 │    └──────────────┬───────────────────────────────┘        │
 │                   ↓                                          │
 │    ┌──────────────────────────────────────────────┐        │
-│    │ Copy to outputs/final_meme.jpg               │        │
+│    │ Copy to outputs/final_meme.png               │        │
 │    └──────────────┬───────────────────────────────┘        │
 │                   ↓                                          │
-│    Output: {"output_path": "outputs/final_meme.jpg"}        │
+│    Output: {"output_path": "outputs/final_meme.png"}        │
 └─────────────────────┬───────────────────────────────────────┘
                       ↓
 ┌─────────────────────────────────────────────────────────────┐
 │ 4. OUTPUT                                                   │
-│    - Meme image ready at outputs/final_meme.jpg            │
+│    - Meme image ready at outputs/final_meme.png            │
 │    - Frontend displays the meme to user                     │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -346,7 +385,7 @@ print(emotions)  # ["happy", "sad", "angry", ...]
 |-------|-------|----------|
 | Image not found | Invalid file path | Check file exists |
 | Failed to preprocess | Corrupted image | Verify image format |
-| Model not found | Missing .pkl file | Add emotion_teller.pkl to models/ |
+| Model not found | Missing .pth file | Add emotion_teller.pth to models/ |
 
 ### **Stage 2 Errors**
 
@@ -364,7 +403,7 @@ print(emotions)  # ["happy", "sad", "angry", ...]
 
 ```bash
 # Test Stage 1
-python -c "from services.emotion_detector import detect_emotion_from_image; print(detect_emotion_from_image('assets/memes/happy/politician_a.jpg'))"
+python -c "from services.emotion_detector import detect_emotion_from_image; print(detect_emotion_from_image('assets/memes/happy/politician_a.png'))"
 
 # Test Stage 2
 python -c "from services.politician_selector import select_and_output_meme; print(select_and_output_meme('happy'))"
@@ -400,7 +439,7 @@ img_array = img_array / 255.0  # 0-1 range
 Edit `services/politician_selector.py`:
 ```python
 # Line ~120: Change default output path
-output_path = outputs_dir / "final_meme.jpg"  # Customize filename
+output_path = outputs_dir / "final_meme.png"  # Customize filename
 ```
 
 ### **Supported Emotions**
@@ -448,7 +487,7 @@ tensorflow       # Deep learning (optional)
 
 ## Next Steps
 
-1. **Add your model**: Place `emotion_teller.pkl` in `models/`
+1. **Add your model**: Place `emotion_teller.pth` in `models/`
 2. **Add meme images**: Populate `assets/memes/{emotion}/` folders
 3. **Create API endpoints**: Implement `routes/capture_routes.py`
 4. **Connect frontend**: Integrate video capture with backend API

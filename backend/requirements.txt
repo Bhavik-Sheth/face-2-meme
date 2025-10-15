@@ -1,6 +1,8 @@
 fastapi
 uvicorn
 pillow
+torch
+torchvision
 deepface
 opencv-python
 pandas
