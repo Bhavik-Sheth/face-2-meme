@@ -1,4 +1,12 @@
-emotion,politician,meme_filename
-happy,politician_a,happy_politician_a.jpg
-sad,politician_b,sad_politician_b.jpg
-angry,politician_c,angry_politician_c.jpg
+# Meme Map - Emotion to Subfolder Mapping
+# This file documents the emotion-based folder structure in assets/memes/
+# Each emotion has its own subfolder containing politician meme images
+# Format: emotion,subfolder_path,description
+emotion,subfolder_path,description
+happy,assets/memes/happy,Positive emotions - joy and happiness
+sad,assets/memes/sad,Sadness and disappointment
+angry,assets/memes/angry,Anger and frustration
+neutral,assets/memes/neutral,Neutral or calm expressions
+surprise,assets/memes/surprise,Shock and surprise
+fear,assets/memes/fear,Fear and anxiety
+disgust,assets/memes/disgust,Disgust and dislike

@@ -1,67 +1,177 @@
 # Face-to-Meme Backend
 
-## Project Overview: Emotion-Based Politician Meme Generator
+## What This Backend Does
 
-This is a **real-time emotion detection system** that captures a user's facial expression from a live video feed and returns a matching politician meme based on the detected emotion.
+This is a **real-time emotion-based politician meme generator**. It analyzes a user's facial expression from a captured image and returns a matching politician meme based on the detected emotion.
 
-### Pipeline Architecture
+---
 
-**3-Stage ML Pipeline:**
+## Pipeline Overview
 
-1. **Emotion Detection Stage** (`services/emotion_detector.py`)
-   - Uses **DeepFace** library to analyze facial expressions from captured video frames
-   - Detects emotions: happy, sad, angry, neutral, surprise, fear, disgust
-
-2. **Politician Selection Stage** (`services/politician_selector.py`)
-   - Custom ML model (stored in `models/` folder)
-   - Maps detected emotions to specific politicians
-   - Trained to associate emotional states with politician personas
-
-3. **Meme Retrieval Stage** (`services/meme_retrieval.py`)
-   - Queries `data/meme_map.csv` to find matching memes
-   - CSV maps: `emotion → politician → meme_filename`
-   - Fetches the corresponding meme image from `assets/memes/`
-
-### API Structure (FastAPI)
-
-**Endpoints:**
-- **POST `/capture`** (`routes/capture_routes.py`) — Main endpoint that accepts a video frame, processes it through the pipeline, and returns a politician meme
-- **GET `/`** (`main.py`) — Health check/root endpoint
-
-### Data Flow
 ```
-User's Face (video frame) 
-    ↓
-POST /capture endpoint
-    ↓
-DeepFace emotion detection
-    ↓
-ML model selects politician
-    ↓
-meme_map.csv lookup
-    ↓
-Returns politician meme image
+User Image → Emotion Detection → Meme Selection → Output Meme
 ```
 
-### Tech Stack
-- **Backend Framework:** FastAPI (async Python web framework)
-- **Emotion Recognition:** DeepFace (pre-trained deep learning model)
-- **ML Models:** Custom classifier (scikit-learn/TensorFlow)
-- **Image Processing:** Pillow, OpenCV
-- **Data Handling:** Pandas for CSV operations
+### **Stage 1: Emotion Detection**
+- Takes a user's face image as input
+- Uses `emotion_teller.pkl` ML model to detect emotion
+- Returns one of 7 emotions: `happy`, `sad`, `angry`, `neutral`, `surprise`, `fear`, `disgust`
 
-### Key Assets
-- **`assets/memes/`** — Repository of politician meme images
-- **`data/meme_map.csv`** — Emotion-to-politician-to-meme mapping database
-- **`models/`** — Trained ML models for politician selection
-- **`outputs/`** — Temporary storage for processed results
+### **Stage 2: Meme Selection**
+- Takes the detected emotion string
+- Randomly selects a matching politician meme from `assets/memes/{emotion}/`
+- Copies selected meme to `outputs/final_meme.jpg` for display
 
-### Use Case
-This is a **hackathon project** that creates an interactive, humorous application where users can see which politician meme matches their current emotional state—designed for entertainment or social media engagement purposes.
+---
 
-The project demonstrates integration of:
-- Computer vision (face detection)
-- Emotion AI (sentiment analysis)
-- Machine learning (classification)
-- Web APIs (FastAPI)
-- Real-time processing
+## Data Flow
+
+```
+1. User captures photo from video feed
+   ↓
+2. Image → emotion_detector.py → Emotion string ("happy")
+   ↓
+3. Emotion → politician_selector.py → Random meme selection
+   ↓
+4. Meme copied to outputs/final_meme.jpg
+   ↓
+5. Frontend displays the meme
+```
+
+---
+
+## Project Structure
+
+```
+backend/
+├── main.py                      # FastAPI application entry point
+├── requirements.txt             # Python dependencies
+│
+├── services/                    # Core business logic
+│   ├── emotion_detector.py      # Stage 1: Emotion detection
+│   ├── politician_selector.py   # Stage 2: Meme selection
+│   └── meme_retrieval.py       # Wrapper utilities
+│
+├── routes/                      # API endpoints
+│   ├── capture_routes.py        # POST /capture endpoint
+│   └── meme_routes.py          # Legacy routes
+│
+├── models/                      # ML models
+│   └── emotion_teller.pkl      # Your emotion detection model
+│
+├── assets/memes/               # Meme repository (organized by emotion)
+│   ├── happy/
+│   ├── sad/
+│   ├── angry/
+│   ├── neutral/
+│   ├── surprise/
+│   ├── fear/
+│   └── disgust/
+│
+├── outputs/                    # Generated output
+│   └── final_meme.jpg         # Final meme ready for display
+│
+└── data/
+    └── meme_map.csv           # Emotion-to-folder mapping
+```
+
+---
+
+## Key Features
+
+✅ **Emotion Detection** - ML model detects 7 emotions from face images  
+✅ **Meme Selection** - Randomly picks matching politician memes  
+✅ **Output Management** - Copies memes to standard output location  
+✅ **Placeholder Mode** - Works without model for testing  
+✅ **Error Handling** - Comprehensive error messages  
+✅ **Modular Design** - Easy to extend and modify  
+
+---
+
+## Tech Stack
+
+- **Framework:** FastAPI (async Python web framework)
+- **ML Models:** Custom emotion classifier (scikit-learn/TensorFlow/PyTorch)
+- **Image Processing:** Pillow, OpenCV, NumPy
+- **Dependencies:** See `requirements.txt`
+
+---
+
+## Quick Start
+
+### 1. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Add Your Model
+Place your trained `emotion_teller.pkl` in `models/` directory
+
+### 3. Add Meme Images
+Add politician meme images to emotion subfolders:
+- `assets/memes/happy/politician1.jpg`
+- `assets/memes/sad/politician2.jpg`
+- etc.
+
+### 4. Test the Pipeline
+```bash
+python test_complete_pipeline.py
+```
+
+### 5. Run the Server
+```bash
+uvicorn main:app --reload
+```
+
+---
+
+## Testing
+
+**Test Complete Pipeline:**
+```bash
+python test_complete_pipeline.py
+```
+
+**Test Stage 1 (Emotion Detection):**
+```python
+from services.emotion_detector import detect_emotion_from_image
+emotion = detect_emotion_from_image("test_image.jpg")
+print(emotion)  # Output: "happy"
+```
+
+**Test Stage 2 (Meme Selection):**
+```python
+from services.politician_selector import select_and_output_meme
+result = select_and_output_meme("happy")
+print(result['output_path'])  # Output: "outputs/final_meme.jpg"
+```
+
+---
+
+## Current Status
+
+| Component | Status |
+|-----------|--------|
+| Stage 1 - Emotion Detection | ✅ Coded (placeholder until model added) |
+| Stage 2 - Meme Selection | ✅ Coded and working |
+| Output Management | ✅ Working |
+| Pipeline Integration | ✅ Working |
+| API Endpoints | 🔄 Placeholder (needs implementation) |
+
+---
+
+## Use Case
+
+An interactive application where users can:
+1. Capture their facial expression via webcam
+2. Get instant emotion detection
+3. Receive a matching politician meme
+4. Share or display the meme
+
+Perfect for entertainment, social media engagement, or hackathon demos.
+
+---
+
+## For More Details
+
+See `Function.md` for detailed implementation documentation.
