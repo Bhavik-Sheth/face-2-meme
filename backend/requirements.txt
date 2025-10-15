@@ -2,3 +2,7 @@ fastapi
 uvicorn
 pillow
 deepface
+opencv-python
+pandas
+scikit-learn
+tensorflow

@@ -1,1 +1,1 @@
-# Meme generation service placeholder. Implement meme composition logic here.
+# Legacy meme generator (replaced by meme_retrieval.py)

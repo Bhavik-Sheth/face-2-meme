@@ -1,3 +1,3 @@
-# Meme Templates
+# Politician Memes
 
-This folder will contain base meme templates and background images used during generation.
+Store politician meme images here (e.g., happy_politician_a.jpg).

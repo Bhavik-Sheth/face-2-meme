@@ -1,1 +1,1 @@
-# Service layer package placeholder.
+# Services package

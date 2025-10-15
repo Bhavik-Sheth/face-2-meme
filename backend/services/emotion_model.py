@@ -1,1 +1,1 @@
-# Emotion model placeholder. Integrate DeepFace or other emotion detectors later.
+# Legacy emotion model (replaced by emotion_detector.py)

@@ -1,1 +1,1 @@
-# Placeholder FastAPI entrypoint. Add application setup code here when ready.
+# FastAPI app entry point for emotion-to-politician-meme pipeline
